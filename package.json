@@ -1,0 +1,22 @@
+{
+  "name": "uniremind",
+  "private": true,
+  "version": "0.1.0",
+  "description": "UniRemind monorepo scaffold",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace @uniremind/backend",
+    "dev:frontend": "npm run dev --workspace @uniremind/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm run prisma:generate --workspace @uniremind/backend",
+    "db:migrate": "npm run prisma:migrate --workspace @uniremind/backend"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  CLASSROOM
+  WHATSAPP
+  GMAIL
+  MANUAL
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  fullName     String?
+  avatarUrl    String?
+  googleId     String?        @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  settings     UserSettings?
+  emailRules   EmailRule[]
+  eventMap     EventMapping[]
+  activityLogs ActivityLog[]
+}
+
+model UserSettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  syncGoogleClassroom Boolean  @default(true)
+  syncWhatsApp        Boolean  @default(false)
+  syncGmail           Boolean  @default(true)
+  timezone            String   @default("Asia/Kolkata")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailRule {
+  id             String   @id @default(cuid())
+  userId         String
+  label          String
+  senderPattern  String?
+  subjectPattern String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, label])
+}
+
+model EventMapping {
+  id               String     @id @default(cuid())
+  userId           String
+  sourceType       SourceType
+  sourceExternalId String
+  calendarEventId  String
+  checksum         String?
+  lastSeenAt       DateTime   @default(now())
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceType, sourceExternalId])
+  @@index([calendarEventId])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
