@@ -27,18 +27,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   try {
     req.auth = verifyAuthToken(token);
     next();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Authentication failed";
-
-    if (message.startsWith("Authentication configuration is incomplete") || message.includes("JWT_SECRET")) {
-      res.status(503).json({
-        success: false,
-        error: "Authentication service is not configured on the server"
-      });
-
-      return;
-    }
-
+  } catch (_error) {
     res.status(401).json({
       success: false,
       error: "Invalid or expired token"

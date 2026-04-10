@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { getAuthEnv } from "../config/env.js";
+import { env } from "../config/env.js";
 
 export type AuthTokenPayload = {
   userId: string;
@@ -15,30 +15,36 @@ function base64UrlEncode(value: string): string {
 function parseExpiresIn(expiresIn: string): number {
   const numeric = Number.parseInt(expiresIn, 10);
 
-  if (expiresIn.endsWith("d")) return numeric * 24 * 60 * 60;
-  if (expiresIn.endsWith("h")) return numeric * 60 * 60;
-  if (expiresIn.endsWith("m")) return numeric * 60;
+  if (expiresIn.endsWith("d")) {
+    return numeric * 24 * 60 * 60;
+  }
+
+  if (expiresIn.endsWith("h")) {
+    return numeric * 60 * 60;
+  }
+
+  if (expiresIn.endsWith("m")) {
+    return numeric * 60;
+  }
 
   return Number.isNaN(numeric) ? 7 * 24 * 60 * 60 : numeric;
 }
 
 export function signAuthToken(payload: Omit<AuthTokenPayload, "exp">): string {
-  const authEnv = getAuthEnv();
   const header = { alg: "HS256", typ: "JWT" };
-  const exp = Math.floor(Date.now() / 1000) + parseExpiresIn(authEnv.jwtExpiresIn);
+  const exp = Math.floor(Date.now() / 1000) + parseExpiresIn(env.JWT_EXPIRES_IN);
   const fullPayload: AuthTokenPayload = { ...payload, exp };
 
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
   const data = `${encodedHeader}.${encodedPayload}`;
 
-  const signature = createHmac("sha256", authEnv.jwtSecret).update(data).digest("base64url");
+  const signature = createHmac("sha256", env.JWT_SECRET).update(data).digest("base64url");
 
   return `${data}.${signature}`;
 }
 
 export function verifyAuthToken(token: string): AuthTokenPayload {
-  const authEnv = getAuthEnv();
   const [encodedHeader, encodedPayload, signature] = token.split(".");
 
   if (!encodedHeader || !encodedPayload || !signature) {
@@ -46,16 +52,9 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
   }
 
   const data = `${encodedHeader}.${encodedPayload}`;
-  const expectedSignature = createHmac("sha256", authEnv.jwtSecret).update(data).digest("base64url");
+  const expectedSignature = createHmac("sha256", env.JWT_SECRET).update(data).digest("base64url");
 
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expectedSignature);
-
-  if (signatureBuffer.length !== expectedBuffer.length) {
-    throw new Error("Invalid signature");
-  }
-
-  if (!timingSafeEqual(signatureBuffer, expectedBuffer)) {
+  if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
     throw new Error("Invalid signature");
   }
 

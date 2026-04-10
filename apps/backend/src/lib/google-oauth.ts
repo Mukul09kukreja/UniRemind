@@ -1,4 +1,4 @@
-import { getAuthEnv } from "../config/env.js";
+import { env } from "../config/env.js";
 
 const GOOGLE_AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -22,11 +22,9 @@ export type GoogleProfile = {
 };
 
 export function buildGoogleAuthUrl(state: string): string {
-  const authEnv = getAuthEnv();
-
   const params = new URLSearchParams({
-    client_id: authEnv.googleClientId,
-    redirect_uri: authEnv.googleRedirectUri,
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: env.GOOGLE_REDIRECT_URI,
     response_type: "code",
     scope: SCOPES.join(" "),
     access_type: "offline",
@@ -38,13 +36,11 @@ export function buildGoogleAuthUrl(state: string): string {
 }
 
 export async function exchangeCodeForTokens(code: string): Promise<{ idToken: string; accessToken: string }> {
-  const authEnv = getAuthEnv();
-
   const body = new URLSearchParams({
     code,
-    client_id: authEnv.googleClientId,
-    client_secret: authEnv.googleClientSecret,
-    redirect_uri: authEnv.googleRedirectUri,
+    client_id: env.GOOGLE_CLIENT_ID,
+    client_secret: env.GOOGLE_CLIENT_SECRET,
+    redirect_uri: env.GOOGLE_REDIRECT_URI,
     grant_type: "authorization_code"
   });
 
@@ -71,8 +67,6 @@ export async function exchangeCodeForTokens(code: string): Promise<{ idToken: st
 }
 
 export async function fetchGoogleProfile(idToken: string): Promise<GoogleProfile> {
-  const authEnv = getAuthEnv();
-
   const params = new URLSearchParams({
     id_token: idToken
   });
@@ -91,7 +85,7 @@ export async function fetchGoogleProfile(idToken: string): Promise<GoogleProfile
     aud?: string;
   };
 
-  if (data.aud !== authEnv.googleClientId || !data.sub || !data.email) {
+  if (data.aud !== env.GOOGLE_CLIENT_ID || !data.sub || !data.email) {
     throw new Error("Invalid Google token audience or missing profile data");
   }
 
