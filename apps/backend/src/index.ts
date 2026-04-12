@@ -6,4 +6,5 @@ startSyncRunner();
 
 app.listen(env.PORT, () => {
   console.log(`UniRemind backend listening on http://localhost:${env.PORT}`);
+  startScheduler();
 });
