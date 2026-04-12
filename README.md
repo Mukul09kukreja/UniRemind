@@ -147,6 +147,16 @@ UniRemind/
 │           └── settings/
 ```
 
+## Phase 3 (in progress)
+
+Manual sync endpoints are now available to bootstrap the Phase 3 pipeline:
+
+- `POST /api/sync/classroom/poll` — pull Classroom coursework and cache source mappings
+- `POST /api/sync/calendar/classroom` — create Google Calendar events for pending Classroom items
+- `POST /api/sync/gmail/classify` — classify recent Gmail messages into productivity labels
+
+All sync endpoints require auth (`Authorization: Bearer <token>` or `uniremind_session` cookie).
+
 ## Phases
 
 - ✅ **Phase 1** — Project scaffold, schema, folder structure

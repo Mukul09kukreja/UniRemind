@@ -48,18 +48,26 @@ authRouter.get("/google/callback", async (req, res, next) => {
     const tokens = await exchangeCodeForTokens(code);
     const profile = await fetchGoogleProfile(tokens.idToken);
 
+    const tokenExpiry = tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : null;
+
     const user = await prisma.user.upsert({
       where: { email: profile.email },
       update: {
         googleId: profile.sub,
         fullName: profile.name,
-        avatarUrl: profile.picture
+        avatarUrl: profile.picture,
+        googleAccessToken: tokens.accessToken,
+        googleRefreshToken: tokens.refreshToken,
+        googleTokenExpiry: tokenExpiry
       },
       create: {
         email: profile.email,
         googleId: profile.sub,
         fullName: profile.name,
         avatarUrl: profile.picture,
+        googleAccessToken: tokens.accessToken,
+        googleRefreshToken: tokens.refreshToken,
+        googleTokenExpiry: tokenExpiry,
         settings: {
           create: {}
         }
