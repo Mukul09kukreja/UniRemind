@@ -246,3 +246,49 @@ export async function classifyRecentGmail(userId: string): Promise<{ processed: 
 
   return { processed };
 }
+
+
+type RunSyncOptions = {
+  classroomEnabled: boolean;
+  gmailEnabled: boolean;
+};
+
+export async function runUserSyncCycle(
+  userId: string,
+  options: RunSyncOptions
+): Promise<{ classroomAssignments: number; calendarEvents: number; gmailProcessed: number }> {
+  let classroomAssignments = 0;
+  let calendarEvents = 0;
+  let gmailProcessed = 0;
+
+  if (options.classroomEnabled) {
+    const classroom = await pollClassroomAssignments(userId);
+    classroomAssignments = classroom.assignments;
+
+    const calendar = await syncClassroomAssignmentsToCalendar(userId);
+    calendarEvents = calendar.created;
+  }
+
+  if (options.gmailEnabled) {
+    const gmail = await classifyRecentGmail(userId);
+    gmailProcessed = gmail.processed;
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      userId,
+      action: "sync.user_cycle_completed",
+      details: {
+        classroomAssignments,
+        calendarEvents,
+        gmailProcessed
+      }
+    }
+  });
+
+  return {
+    classroomAssignments,
+    calendarEvents,
+    gmailProcessed
+  };
+}

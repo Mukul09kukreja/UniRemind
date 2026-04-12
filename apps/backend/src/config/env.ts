@@ -12,7 +12,10 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
   GOOGLE_REDIRECT_URI: z.string().url("GOOGLE_REDIRECT_URI must be a valid URL"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
-  JWT_EXPIRES_IN: z.string().default("7d")
+  JWT_EXPIRES_IN: z.string().default("7d"),
+  SYNC_RUNNER_ENABLED: z.coerce.boolean().default(true),
+  SYNC_RUNNER_INTERVAL_MS: z.coerce.number().int().positive().default(5 * 60 * 1000),
+  SYNC_RUNNER_BATCH_SIZE: z.coerce.number().int().positive().max(200).default(25)
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
