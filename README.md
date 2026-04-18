@@ -170,9 +170,19 @@ Phase 4 begins automation on top of the manual sync flow:
   - `POST /api/sync/run-now` — run one full sync cycle for the authenticated user
   - `GET /api/sync/runner/status` — inspect current runner health/state
 
+## Phase 5 (started)
+
+Dashboard is now connected to live backend APIs:
+
+- `GET /api/dashboard/summary` — email classification totals + runner alert count (last 30 days)
+- `GET /api/dashboard/upcoming` — next 10 upcoming Classroom items from sync activity logs
+
+Frontend `/dashboard` now fetches these APIs and renders live cards/feed instead of static placeholders.
+
 ## Phases
 
 - ✅ **Phase 1** — Project scaffold, schema, folder structure
 - ✅ **Phase 2** — Google OAuth, JWT auth, protected routes, user settings
 - ✅ **Phase 3** — Classroom poller, Calendar sync, Gmail classifier
-- 🔜 **Phase 4** — Automated sync runner, reliability hardening
+- ✅ **Phase 4** — Automated sync runner, reliability hardening
+- 🚧 **Phase 5** — Live dashboard feed and API polishing
