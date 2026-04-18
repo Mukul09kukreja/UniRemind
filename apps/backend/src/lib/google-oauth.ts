@@ -35,7 +35,14 @@ export function buildGoogleAuthUrl(state: string): string {
   return `${GOOGLE_AUTH_BASE_URL}?${params.toString()}`;
 }
 
-export async function exchangeCodeForTokens(code: string): Promise<{ idToken: string; accessToken: string }> {
+export type GoogleOAuthTokens = {
+  idToken: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+};
+
+export async function exchangeCodeForTokens(code: string): Promise<GoogleOAuthTokens> {
   const body = new URLSearchParams({
     code,
     client_id: env.GOOGLE_CLIENT_ID,
@@ -54,7 +61,12 @@ export async function exchangeCodeForTokens(code: string): Promise<{ idToken: st
     throw new Error("Google token exchange failed");
   }
 
-  const data = (await response.json()) as { id_token?: string; access_token?: string };
+  const data = (await response.json()) as {
+    id_token?: string;
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
 
   if (!data.id_token || !data.access_token) {
     throw new Error("Google token payload missing id_token or access_token");
@@ -62,7 +74,9 @@ export async function exchangeCodeForTokens(code: string): Promise<{ idToken: st
 
   return {
     idToken: data.id_token,
-    accessToken: data.access_token
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresIn: data.expires_in
   };
 }
 
