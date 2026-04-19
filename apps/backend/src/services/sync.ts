@@ -80,7 +80,9 @@ export async function pollClassroomAssignments(userId: string): Promise<{ course
   let assignmentCount = 0;
 
   for (const course of courses) {
-    if (!course.id) continue;
+    if (!course.id) {
+      continue;
+    }
 
     const courseworkRes = await googleApiGet<ClassroomCourseworkResponse>(
       userId,
@@ -88,7 +90,9 @@ export async function pollClassroomAssignments(userId: string): Promise<{ course
     );
 
     for (const item of courseworkRes.courseWork ?? []) {
-      if (!item.id) continue;
+      if (!item.id) {
+        continue;
+      }
 
       assignmentCount += 1;
       await prisma.eventMapping.upsert({
@@ -132,7 +136,10 @@ export async function pollClassroomAssignments(userId: string): Promise<{ course
     }
   }
 
-  return { courses: courses.length, assignments: assignmentCount };
+  return {
+    courses: courses.length,
+    assignments: assignmentCount
+  };
 }
 
 export async function syncClassroomAssignmentsToCalendar(userId: string): Promise<{ created: number }> {
@@ -142,7 +149,9 @@ export async function syncClassroomAssignmentsToCalendar(userId: string): Promis
       sourceType: "CLASSROOM",
       calendarEventId: "pending-sync"
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: {
+      createdAt: "asc"
+    },
     take: 50
   });
 
@@ -156,7 +165,9 @@ export async function syncClassroomAssignmentsToCalendar(userId: string): Promis
     );
 
     const dueDate = dueDateToIso(item);
-    if (!dueDate) continue;
+    if (!dueDate) {
+      continue;
+    }
 
     const calendarEvent = await googleApiPost<{ id?: string }>(
       userId,
@@ -171,7 +182,9 @@ export async function syncClassroomAssignmentsToCalendar(userId: string): Promis
       }
     );
 
-    if (!calendarEvent.id) continue;
+    if (!calendarEvent.id) {
+      continue;
+    }
 
     created += 1;
     await prisma.eventMapping.update({
@@ -184,7 +197,9 @@ export async function syncClassroomAssignmentsToCalendar(userId: string): Promis
     data: {
       userId,
       action: "calendar.classroom_sync",
-      details: { created }
+      details: {
+        created
+      }
     }
   });
 
@@ -200,17 +215,9 @@ export async function classifyRecentGmail(userId: string): Promise<{ processed: 
   let processed = 0;
 
   for (const message of listRes.messages ?? []) {
-    if (!message.id) continue;
-
-    // Skip already classified messages
-    const existing = await prisma.activityLog.findFirst({
-      where: {
-        userId,
-        action: "gmail.message_classified",
-        details: { path: ["messageId"], equals: message.id }
-      }
-    });
-    if (existing) continue;
+    if (!message.id) {
+      continue;
+    }
 
     const fullMessage = await googleApiGet<GmailMessageResponse>(
       userId,
@@ -218,7 +225,7 @@ export async function classifyRecentGmail(userId: string): Promise<{ processed: 
     );
 
     const subject =
-      fullMessage.payload?.headers?.find((h) => h.name?.toLowerCase() === "subject")?.value ?? "";
+      fullMessage.payload?.headers?.find((header) => header.name?.toLowerCase() === "subject")?.value ?? "";
 
     const label = classifyMessage(subject, fullMessage.snippet ?? "");
     processed += 1;
@@ -239,6 +246,7 @@ export async function classifyRecentGmail(userId: string): Promise<{ processed: 
 
   return { processed };
 }
+
 
 type RunSyncOptions = {
   classroomEnabled: boolean;
@@ -270,9 +278,17 @@ export async function runUserSyncCycle(
     data: {
       userId,
       action: "sync.user_cycle_completed",
-      details: { classroomAssignments, calendarEvents, gmailProcessed }
+      details: {
+        classroomAssignments,
+        calendarEvents,
+        gmailProcessed
+      }
     }
   });
 
-  return { classroomAssignments, calendarEvents, gmailProcessed };
+  return {
+    classroomAssignments,
+    calendarEvents,
+    gmailProcessed
+  };
 }
