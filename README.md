@@ -179,10 +179,20 @@ Dashboard is now connected to live backend APIs:
 
 Frontend `/dashboard` now fetches these APIs and renders live cards/feed instead of static placeholders.
 
+## Phase 6 (started)
+
+Priority alerts and dashboard API hardening are now in progress:
+
+- `GET /api/dashboard/summary?days=30` supports query-based time windows
+- `GET /api/dashboard/upcoming?limit=10&offset=0` supports pagination metadata
+- `GET /api/dashboard/alerts?windowHours=48&limit=5` returns urgency and sync-health alerts
+- Dashboard UI now renders alert severity badges from `/api/dashboard/alerts`
+
 ## Phases
 
 - ✅ **Phase 1** — Project scaffold, schema, folder structure
 - ✅ **Phase 2** — Google OAuth, JWT auth, protected routes, user settings
 - ✅ **Phase 3** — Classroom poller, Calendar sync, Gmail classifier
 - ✅ **Phase 4** — Automated sync runner, reliability hardening
-- 🚧 **Phase 5** — Live dashboard feed and API polishing
+- ✅ **Phase 5** — Live dashboard feed and API polishing
+- 🚧 **Phase 6** — Priority alerts and dashboard hardening

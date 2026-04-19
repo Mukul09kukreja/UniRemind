@@ -26,11 +26,27 @@ type UpcomingResponse = {
     source: string;
     courseId: string | null;
   }>;
+  meta: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+};
+
+type AlertsResponse = {
+  success: boolean;
+  alerts: Array<{
+    id: string;
+    severity: "critical" | "high" | "medium";
+    message: string;
+    dueAt: string | null;
+  }>;
 };
 
 export default function DashboardPage(): JSX.Element {
   const [summary, setSummary] = useState<SummaryResponse["summary"] | null>(null);
   const [upcoming, setUpcoming] = useState<UpcomingResponse["upcoming"]>([]);
+  const [alerts, setAlerts] = useState<AlertsResponse["alerts"]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,24 +56,29 @@ export default function DashboardPage(): JSX.Element {
       setError(null);
 
       try {
-        const [summaryRes, upcomingRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/dashboard/summary`, {
+        const [summaryRes, upcomingRes, alertsRes] = await Promise.all([
+          fetch(`${apiBaseUrl}/api/dashboard/summary?days=30`, {
             credentials: "include"
           }),
-          fetch(`${apiBaseUrl}/api/dashboard/upcoming`, {
+          fetch(`${apiBaseUrl}/api/dashboard/upcoming?limit=10&offset=0`, {
+            credentials: "include"
+          }),
+          fetch(`${apiBaseUrl}/api/dashboard/alerts?windowHours=48&limit=5`, {
             credentials: "include"
           })
         ]);
 
-        if (!summaryRes.ok || !upcomingRes.ok) {
+        if (!summaryRes.ok || !upcomingRes.ok || !alertsRes.ok) {
           throw new Error("Unable to fetch dashboard data. Please sign in again.");
         }
 
         const summaryData = (await summaryRes.json()) as SummaryResponse;
         const upcomingData = (await upcomingRes.json()) as UpcomingResponse;
+        const alertsData = (await alertsRes.json()) as AlertsResponse;
 
         setSummary(summaryData.summary);
         setUpcoming(upcomingData.upcoming);
+        setAlerts(alertsData.alerts);
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : "Unknown dashboard error");
       } finally {
@@ -108,11 +129,18 @@ export default function DashboardPage(): JSX.Element {
         </ul>
       </SectionCard>
 
-      <SectionCard title="High Priority Alerts" subtitle="Background sync runner errors in the last 30 days">
+      <SectionCard title="High Priority Alerts" subtitle="Urgency + sync health alerts">
         <ul className="list">
-          <li className="listItem">
-            {loading ? "Loading alerts..." : `${summary?.highPriorityAlerts ?? 0} runner alerts detected.`}
-          </li>
+          {!loading && alerts.length === 0 ? (
+            <li className="listItem">No alerts right now.</li>
+          ) : (
+            alerts.map((alert) => (
+              <li className="listItem" key={alert.id}>
+                <strong>[{alert.severity.toUpperCase()}]</strong> {alert.message}
+                {alert.dueAt ? ` — due ${new Date(alert.dueAt).toLocaleString()}` : ""}
+              </li>
+            ))
+          )}
         </ul>
       </SectionCard>
     </div>
