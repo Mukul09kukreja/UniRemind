@@ -14,7 +14,9 @@ async function runSyncForAllUsers(): Promise<void> {
     where: {
       googleRefreshToken: { not: null }
     },
-    select: { id: true, email: true }
+    include: {
+      settings: true
+    }
   });
 
   console.log(`[scheduler] Found ${users.length} user(s) with Google tokens`);
@@ -23,27 +25,37 @@ async function runSyncForAllUsers(): Promise<void> {
     try {
       console.log(`[scheduler] Syncing user ${user.email}`);
 
-      const classroomResult = await pollClassroomAssignments(user.id);
-      console.log(`[scheduler] Classroom poll: ${JSON.stringify(classroomResult)}`);
+      const classroomEnabled = user.settings?.syncGoogleClassroom ?? false;
+      const gmailEnabled = user.settings?.syncGmail ?? true;
 
-      const calendarResult = await syncClassroomAssignmentsToCalendar(user.id);
-      console.log(`[scheduler] Calendar sync: ${JSON.stringify(calendarResult)}`);
+      if (classroomEnabled) {
+        const classroomResult = await pollClassroomAssignments(user.id);
+        console.log(`[scheduler] Classroom poll: ${JSON.stringify(classroomResult)}`);
 
-      const gmailResult = await classifyRecentGmail(user.id);
-      console.log(`[scheduler] Gmail classify: ${JSON.stringify(gmailResult)}`);
+        const calendarResult = await syncClassroomAssignmentsToCalendar(user.id);
+        console.log(`[scheduler] Calendar sync: ${JSON.stringify(calendarResult)}`);
+      } else {
+        console.log(`[scheduler] Classroom sync skipped for ${user.email} (disabled in settings)`);
+      }
+
+      if (gmailEnabled) {
+        const gmailResult = await classifyRecentGmail(user.id);
+        console.log(`[scheduler] Gmail classify: ${JSON.stringify(gmailResult)}`);
+      } else {
+        console.log(`[scheduler] Gmail sync skipped for ${user.email} (disabled in settings)`);
+      }
 
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[scheduler] Error syncing user ${user.email}: ${message}`);
 
-      // Log error to ActivityLog so it's visible in DB
       await prisma.activityLog.create({
         data: {
           userId: user.id,
           action: "scheduler.sync_error",
           details: { error: message, timestamp: new Date().toISOString() }
         }
-      }).catch(() => {}); // swallow log errors
+      }).catch(() => {});
     }
   }
 
@@ -51,7 +63,6 @@ async function runSyncForAllUsers(): Promise<void> {
 }
 
 export function startScheduler(): void {
-  // Run every 30 minutes
   cron.schedule("*/30 * * * *", () => {
     runSyncForAllUsers().catch((error) => {
       console.error("[scheduler] Unhandled error in sync run:", error);
@@ -60,10 +71,9 @@ export function startScheduler(): void {
 
   console.log("[scheduler] Background sync scheduler started (every 30 minutes)");
 
-  // Also run once immediately on startup after a short delay
   setTimeout(() => {
     runSyncForAllUsers().catch((error) => {
       console.error("[scheduler] Error in startup sync:", error);
     });
-  }, 5000); // wait 5s for DB connection to stabilize
+  }, 5000);
 }
