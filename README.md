@@ -65,6 +65,9 @@ OPENAI_API_KEY=your-openai-api-key
 
 JWT_SECRET=any-random-string-minimum-32-characters
 JWT_EXPIRES_IN=7d
+SYNC_RUNNER_ENABLED=true
+SYNC_RUNNER_INTERVAL_MS=300000
+SYNC_RUNNER_BATCH_SIZE=25
 ```
 
 ### 5. Start the database
@@ -147,8 +150,49 @@ UniRemind/
 │           └── settings/
 ```
 
+## Phase 3 (in progress)
+
+Manual sync endpoints are now available to bootstrap the Phase 3 pipeline:
+
+- `POST /api/sync/classroom/poll` — pull Classroom coursework and cache source mappings
+- `POST /api/sync/calendar/classroom` — create Google Calendar events for pending Classroom items
+- `POST /api/sync/gmail/classify` — classify recent Gmail messages into productivity labels
+
+All sync endpoints require auth (`Authorization: Bearer <token>` or `uniremind_session` cookie).
+
+## Phase 4 (started)
+
+Phase 4 begins automation on top of the manual sync flow:
+
+- Background sync runner starts with the API server
+- Runner periodically executes sync cycles for users with connected Google refresh tokens
+- New helper endpoints:
+  - `POST /api/sync/run-now` — run one full sync cycle for the authenticated user
+  - `GET /api/sync/runner/status` — inspect current runner health/state
+
+## Phase 5 (started)
+
+Dashboard is now connected to live backend APIs:
+
+- `GET /api/dashboard/summary` — email classification totals + runner alert count (last 30 days)
+- `GET /api/dashboard/upcoming` — next 10 upcoming Classroom items from sync activity logs
+
+Frontend `/dashboard` now fetches these APIs and renders live cards/feed instead of static placeholders.
+
+## Phase 6 (started)
+
+Priority alerts and dashboard API hardening are now in progress:
+
+- `GET /api/dashboard/summary?days=30` supports query-based time windows
+- `GET /api/dashboard/upcoming?limit=10&offset=0` supports pagination metadata
+- `GET /api/dashboard/alerts?windowHours=48&limit=5` returns urgency and sync-health alerts
+- Dashboard UI now renders alert severity badges from `/api/dashboard/alerts`
+
 ## Phases
 
 - ✅ **Phase 1** — Project scaffold, schema, folder structure
 - ✅ **Phase 2** — Google OAuth, JWT auth, protected routes, user settings
-- 🔜 **Phase 3** — Classroom poller, Calendar sync, Gmail classifier
+- ✅ **Phase 3** — Classroom poller, Calendar sync, Gmail classifier
+- ✅ **Phase 4** — Automated sync runner, reliability hardening
+- ✅ **Phase 5** — Live dashboard feed and API polishing
+- 🚧 **Phase 6** — Priority alerts and dashboard hardening
